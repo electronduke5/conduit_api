@@ -15,16 +15,16 @@ class AppUserController extends ResourceController {
   Future<Response> getProfile(
       @Bind.header(HttpHeaders.authorizationHeader) String header) async {
     try {
-      //TODO: Убрать substring (в Postman в начале токена написано Bearer *токен*)
-      header = header.substring(7);
       //Получаем id пользователя
-      final id = AppUtils.getIdFromToken(header);
+      final id = AppUtils.getIdFromHeader(header);
 
-      final user = await managedContext.fetchObjectWithID<User>(id);
+      final qUser = Query<User>(managedContext)
+        ..where((x) => x.id).equalTo(id)
+        ..join(set: (t) => t.assets);
+      final user = await qUser.fetchOne();
       //Удаляем ненужные параметры для красивого вывода данных пользователя
       user!.removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
-      return AppResponse.ok(
-          message: 'Успешное получение профиля', body: user.backing.contents);
+      return Response.ok(user);
     } catch (e) {
       return AppResponse.serverError(e, message: 'Ошибка получения профиля');
     }
@@ -35,9 +35,7 @@ class AppUserController extends ResourceController {
       @Bind.header(HttpHeaders.authorizationHeader) String header,
       @Bind.body() User user) async {
     try {
-      //TODO: Убрать substring (в Postman в начале токена написано Bearer *токен*)
-      header = header.substring(7);
-      final id = AppUtils.getIdFromToken(header);
+      final id = AppUtils.getIdFromHeader(header);
       final fUser = await managedContext.fetchObjectWithID<User>(id);
       final qUpdateUser = Query<User>(managedContext)
         ..where((user) => user.id).equalTo(id)
@@ -66,9 +64,7 @@ class AppUserController extends ResourceController {
     @Bind.query('oldPassword') String oldPassword,
   ) async {
     try {
-      //TODO: Убрать substring (в Postman в начале токена написано Bearer *токен*)
-      header = header.substring(7);
-      final id = AppUtils.getIdFromToken(header);
+      final id = AppUtils.getIdFromHeader(header);
       final qFindUser = Query<User>(managedContext)
         ..where((user) => user.id).equalTo(id)
         ..returningProperties(
