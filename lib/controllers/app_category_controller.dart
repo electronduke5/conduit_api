@@ -44,13 +44,9 @@ class AppCategoryController extends ResourceController {
           qCategories
               .where((category) => category.isDeleted)
               .equalTo(filter == 1 ? true : false);
-        }
-        else{
-            print('filter == null');
-            qCategories
-                .where((category) => category.isDeleted)
-                .equalTo(false);
-
+        } else {
+          print('filter == null');
+          qCategories.where((category) => category.isDeleted).equalTo(false);
         }
         final categories = await qCategories.fetch();
 
@@ -126,17 +122,27 @@ class AppCategoryController extends ResourceController {
       final idUser = AppUtils.getIdFromHeader(header);
       final qDeleteCategory = Query<Category>(context)
         ..where((category) => category.id).equalTo(id)
-        ..where((category) => category.user!.id).equalTo(idUser);
+        ..where((category) => category.user!.id).equalTo(idUser)
+        ..join(set: (x) => x.transactions);
       final category = await qDeleteCategory.fetchOne();
-      if (category!.transactions == null) {
-        print('Transactions are empty');
-        await qDeleteCategory.delete();
-        print('Delete success');
-      } else {
-        qDeleteCategory.values.isDeleted = true;
-        await qDeleteCategory.updateOne();
+
+      if (category == null) {
+        return Response.badRequest(
+          body: {"message": "Категория не найдена"},
+        );
       }
-      return AppResponse.ok(message: 'Удаление прошло успешно');
+      if (category.transactions?.isEmpty == true) {
+        final qDelete = Query<Category>(context)
+          ..where((x) => x.id).equalTo(id);
+        await qDelete.delete();
+        return Response.ok(true);
+      }
+
+      final qUpdate = Query<Category>(context)
+        ..where((x) => x.id).equalTo(id)
+        ..values.isDeleted = true;
+      final updated = await qUpdate.updateOne();
+      return Response.ok(updated);
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
     }

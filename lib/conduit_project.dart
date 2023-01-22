@@ -5,6 +5,7 @@ import 'package:conduit_project/controllers/app_asset_controller.dart';
 import 'package:conduit_project/controllers/app_auth_controllers.dart';
 import 'package:conduit_project/controllers/app_category_controller.dart';
 import 'package:conduit_project/controllers/app_token_controller.dart';
+import 'package:conduit_project/controllers/app_transaction_controller.dart';
 import 'package:conduit_project/controllers/app_user_controller.dart';
 
 class AppService extends ApplicationChannel {
@@ -31,7 +32,10 @@ class AppService extends ApplicationChannel {
         .link(() => AppAssetController(managedContext))
     ..route('category')
         .link(AppTokenController.new)!
-        .link(() => AppCategoryController(managedContext));
+        .link(() => AppCategoryController(managedContext))
+    ..route('transaction')
+        .link(AppTokenController.new)!
+        .link(() => AppTransactionController(managedContext));
 
   PersistentStore _initDatabase() {
     final username = Platform.environment["DB_USERNAME"] ?? 'postgres';
