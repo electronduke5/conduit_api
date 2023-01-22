@@ -5,7 +5,9 @@ import 'package:conduit_project/models/user.dart';
 import 'package:conduit_project/utils/app_utils.dart';
 
 import '../models/asset.dart';
+import '../models/history.dart';
 import '../utils/app_response.dart';
+import 'app_history_controller.dart';
 
 class AppAssetController extends ResourceController {
   AppAssetController(this.managedContext);
@@ -64,10 +66,17 @@ class AppAssetController extends ResourceController {
   }) async {
     try {
       final idUser = AppUtils.getIdFromHeader(header);
+      final user = await managedContext.fetchObjectWithID<User>(idUser);
       final qDeleteAssets = Query<Asset>(managedContext)
         ..where((asset) => asset.id).equalTo(id)
         ..where((asset) => asset.user!.id).equalTo(idUser);
       await qDeleteAssets.delete();
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = user
+            ..description =
+                AppHistoryController.deleteDescription('Asset', id!)
+            ..tableName = 'Asset');
       return AppResponse.ok(message: 'Удаление прошло успешно');
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
@@ -99,6 +108,11 @@ class AppAssetController extends ResourceController {
         id = createdAsset.id!;
       });
       final assetData = await managedContext.fetchObjectWithID<Asset>(id);
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = user
+            ..description = AppHistoryController.createDescription('Asset', assetData!.id!)
+            ..tableName = 'Asset');
       return Response.ok(assetData);
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
@@ -112,9 +126,13 @@ class AppAssetController extends ResourceController {
     @Bind.query('id') int assetId,
   ) async {
     try {
+      final idUser = AppUtils.getIdFromHeader(header);
+      final user = await managedContext.fetchObjectWithID<User>(idUser);
+
       final qFindAsset = Query<Asset>(managedContext)
         ..where((asset) => asset.id).equalTo(assetId);
       final fAsset = await qFindAsset.fetchOne();
+      //TODO:Null check operator used on a null value
 
       final qUpdateAsset = Query<Asset>(managedContext)
         ..where((asset) => asset.id).equalTo(assetId)
@@ -125,6 +143,11 @@ class AppAssetController extends ResourceController {
       await qUpdateAsset.updateOne();
 
       final newAsset = await qFindAsset.fetchOne();
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = user
+            ..description = AppHistoryController.updateDescription('Asset', newAsset!.id!)
+            ..tableName = 'Asset');
       return Response.ok(newAsset);
     } catch (e) {
       return AppResponse.serverError(e, message: 'Ошибка обновления данных');

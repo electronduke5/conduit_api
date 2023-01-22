@@ -4,7 +4,9 @@ import 'package:conduit/conduit.dart';
 import 'package:conduit_project/models/user.dart';
 import 'package:conduit_project/utils/app_utils.dart';
 
+import '../models/history.dart';
 import '../utils/app_response.dart';
+import 'app_history_controller.dart';
 
 class AppUserController extends ResourceController {
   AppUserController(this.managedContext);
@@ -48,6 +50,12 @@ class AppUserController extends ResourceController {
       final newUser = await managedContext.fetchObjectWithID<User>(id);
       newUser!.removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
 
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = user
+            ..description =
+                AppHistoryController.updateDescription('User', newUser.id!)
+            ..tableName = 'User');
       return AppResponse.ok(
         message: 'Успешное обновление данных',
         body: newUser.backing.contents,
@@ -97,6 +105,12 @@ class AppUserController extends ResourceController {
         ..values.hashPassword = newHashPassword;
 
       await qUpdateUser.fetchOne();
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = fUser
+            ..description =
+                'Обновление пароля у пользователя под id = ${fUser.id!}'
+            ..tableName = 'User');
       return AppResponse.ok(body: 'Пароль успешно обновлен');
     } catch (e) {
       return AppResponse.serverError(e, message: 'Ошибка обновления пароля');

@@ -14,7 +14,7 @@ class _Category{
   @Relate(#categories, isRequired: true, onDelete: DeleteRule.cascade)
   User? user;
 
-  @Column(defaultValue: 'false')
+  @Column(defaultValue: 'false', omitByDefault: true)
   bool? isDeleted;
   ManagedSet<Transaction>? transactions;
 }

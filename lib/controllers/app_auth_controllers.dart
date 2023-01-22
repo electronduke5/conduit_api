@@ -6,6 +6,8 @@ import 'package:conduit_project/utils/app_utils.dart';
 import 'package:jaguar_jwt/jaguar_jwt.dart';
 
 import '../models/user.dart';
+import '../models/history.dart';
+import 'app_history_controller.dart';
 
 class AppAuthController extends ResourceController {
   AppAuthController(this.managedContext);
@@ -102,6 +104,12 @@ class AppAuthController extends ResourceController {
         _updateTokens(id, managedContext);
       });
       final userData = await managedContext.fetchObjectWithID<User>(id);
+
+      AppHistoryController(managedContext).createRecord(
+          model: History()
+            ..user = userData
+            ..description = AppHistoryController.createDescription('User', id)
+            ..tableName = 'User');
 
       return Response.ok(
         ModelResponse(

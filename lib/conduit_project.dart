@@ -4,9 +4,11 @@ import 'package:conduit/conduit.dart';
 import 'package:conduit_project/controllers/app_asset_controller.dart';
 import 'package:conduit_project/controllers/app_auth_controllers.dart';
 import 'package:conduit_project/controllers/app_category_controller.dart';
+import 'package:conduit_project/controllers/app_history_controller.dart';
 import 'package:conduit_project/controllers/app_token_controller.dart';
 import 'package:conduit_project/controllers/app_transaction_controller.dart';
 import 'package:conduit_project/controllers/app_user_controller.dart';
+import 'package:conduit_project/models/history.dart';
 
 class AppService extends ApplicationChannel {
   late final ManagedContext managedContext;
@@ -35,7 +37,10 @@ class AppService extends ApplicationChannel {
         .link(() => AppCategoryController(managedContext))
     ..route('transaction')
         .link(AppTokenController.new)!
-        .link(() => AppTransactionController(managedContext));
+        .link(() => AppTransactionController(managedContext))
+    ..route('history')
+        .link(AppTokenController.new)!
+        .link(() => AppHistoryController(managedContext));
 
   PersistentStore _initDatabase() {
     final username = Platform.environment["DB_USERNAME"] ?? 'postgres';

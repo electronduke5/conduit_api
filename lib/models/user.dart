@@ -1,6 +1,7 @@
 import 'package:conduit/conduit.dart';
 import 'package:conduit_project/models/asset.dart';
 import 'package:conduit_project/models/category.dart';
+import 'package:conduit_project/models/history.dart';
 
 class User extends ManagedObject<_User> implements _User {}
 
@@ -31,4 +32,5 @@ class _User {
 
   ManagedSet<Asset>? assets;
   ManagedSet<Category>? categories;
+  ManagedSet<History>? histories;
 }

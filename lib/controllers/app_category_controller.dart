@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:conduit/conduit.dart';
+import 'package:conduit_project/controllers/app_history_controller.dart';
 import 'package:conduit_project/models/category.dart';
+import 'package:conduit_project/models/history.dart';
 import 'package:conduit_project/utils/app_response.dart';
 
 import '../models/user.dart';
@@ -66,9 +68,9 @@ class AppCategoryController extends ResourceController {
   ) async {
     if (category.name == null) {
       return AppResponse.badRequest(
-          message: 'Название категории - обязательное поле');
+        message: 'Название категории - обязательное поле',
+      );
     }
-
     try {
       late final int id;
       final idUser = AppUtils.getIdFromHeader(header);
@@ -83,6 +85,13 @@ class AppCategoryController extends ResourceController {
         id = createdCategory.id!;
       });
       final categoryData = await context.fetchObjectWithID<Category>(id);
+
+      AppHistoryController(context).createRecord(
+          model: History()
+            ..user = user
+            ..description =
+                AppHistoryController.createDescription('Category', id)
+            ..tableName = 'Category');
       return Response.ok(categoryData);
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
@@ -96,6 +105,8 @@ class AppCategoryController extends ResourceController {
     @Bind.query('id') int categoryId,
   ) async {
     try {
+      final idUser = AppUtils.getIdFromHeader(header);
+      final user = await context.fetchObjectWithID<User>(idUser);
       final qFindCategory = Query<Category>(context)
         ..where((category) => category.id).equalTo(categoryId);
       final fCategory = await qFindCategory.fetchOne();
@@ -107,6 +118,11 @@ class AppCategoryController extends ResourceController {
       await qUpdateCategory.updateOne();
 
       final newCategory = await qFindCategory.fetchOne();
+      AppHistoryController(context).createRecord(
+          model: History()
+            ..user = user
+            ..description = AppHistoryController.updateDescription('Category', newCategory!.id!)
+            ..tableName = 'Category');
       return Response.ok(newCategory);
     } catch (e) {
       return AppResponse.serverError(e, message: 'Ошибка обновления данных');
@@ -135,6 +151,8 @@ class AppCategoryController extends ResourceController {
   }) async {
     try {
       final idUser = AppUtils.getIdFromHeader(header);
+      final user = await context.fetchObjectWithID<User>(idUser);
+
       final qDeleteCategory = Query<Category>(context)
         ..where((category) => category.id).equalTo(id)
         ..where((category) => category.user!.id).equalTo(idUser)
@@ -150,6 +168,11 @@ class AppCategoryController extends ResourceController {
         final qDelete = Query<Category>(context)
           ..where((x) => x.id).equalTo(id);
         await qDelete.delete();
+        AppHistoryController(context).createRecord(
+            model: History()
+              ..user = user
+              ..description = AppHistoryController.deleteDescription('Category', id!)
+              ..tableName = 'Category');
         return Response.ok(true);
       }
 

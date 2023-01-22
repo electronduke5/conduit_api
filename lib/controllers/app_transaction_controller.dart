@@ -5,8 +5,11 @@ import 'package:conduit_project/models/transaction.dart';
 import 'package:conduit_project/utils/app_response.dart';
 
 import '../models/asset.dart';
+import '../models/history.dart';
 import '../models/response.dart';
+import '../models/user.dart';
 import '../utils/app_utils.dart';
+import 'app_history_controller.dart';
 
 class AppTransactionController extends ResourceController {
   final ManagedContext context;
@@ -80,6 +83,8 @@ class AppTransactionController extends ResourceController {
     }
     try {
       final userId = AppUtils.getIdFromHeader(header);
+      final user = await context.fetchObjectWithID<User>(userId);
+
       final qGetAsset = Query<Asset>(context)
         ..where((x) => x.id).equalTo(transaction.asset!.id)
         ..where((x) => x.user?.id).equalTo(userId);
@@ -107,12 +112,19 @@ class AppTransactionController extends ResourceController {
         ..where((x) => x.id).equalTo(transaction.asset!.id);
       await qUpdateAsset.updateOne();
 
-      final transactionData2 = await (Query<Transaction>(context)
+      final transactionData = await (Query<Transaction>(context)
             ..where((x) => x.id).equalTo(created.id)
             ..join(object: (transaction) => transaction.category)
             ..join(object: (transaction) => transaction.asset))
           .fetchOne();
-      return Response.ok(transactionData2);
+      AppHistoryController(context).createRecord(
+          model: History()
+            ..user = user
+            ..description = AppHistoryController.createDescription(
+                'Transaction', transactionData!.id!)
+            ..tableName = 'Transaction');
+
+      return Response.ok(transactionData);
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
     }
@@ -179,6 +191,13 @@ class AppTransactionController extends ResourceController {
       transaction!.asset!.user!.removePropertiesFromBackingMap(
         ['accessToken', 'refreshToken'],
       );
+      AppHistoryController(context).createRecord(
+          model: History()
+            ..user = transaction.asset!.user!
+            ..description = AppHistoryController.updateDescription(
+                'Transaction', transaction.id!)
+            ..tableName = 'Transaction');
+
       return Response.ok(
         transaction,
       );
@@ -189,10 +208,10 @@ class AppTransactionController extends ResourceController {
     }
   }
 
-  @Operation.delete('id')
+  @Operation.delete()
   Future<Response> delete(
     @Bind.header(HttpHeaders.authorizationHeader) String header,
-    @Bind.path("id") int id,
+    @Bind.query("id") int id,
   ) async {
     try {
       final userId = AppUtils.getIdFromHeader(header);
@@ -216,6 +235,13 @@ class AppTransactionController extends ResourceController {
       final qDelete = Query<Transaction>(context)
         ..where((x) => x.id).equalTo(id);
       await qDelete.delete();
+
+      AppHistoryController(context).createRecord(
+          model: History()
+            ..user = transaction.asset!.user!
+            ..description = AppHistoryController.deleteDescription(
+                'Transaction', transaction.id!)
+            ..tableName = 'Transaction');
       return Response.ok(true);
     } catch (exception) {
       return AppResponse.ok(
