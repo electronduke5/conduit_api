@@ -30,7 +30,7 @@ class AppService extends ApplicationChannel {
     ..route('asset')
         .link(AppTokenController.new)!
         .link(() => AppAssetController(managedContext))
-    ..route('category')
+    ..route('category[/:id]')
         .link(AppTokenController.new)!
         .link(() => AppCategoryController(managedContext))
     ..route('transaction')

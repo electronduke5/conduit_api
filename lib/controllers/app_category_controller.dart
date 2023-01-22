@@ -113,6 +113,21 @@ class AppCategoryController extends ResourceController {
     }
   }
 
+  @Operation.post('id')
+  Future<Response> recovery(
+      @Bind.header(HttpHeaders.authorizationHeader) String header,
+      @Bind.path('id') int id) async {
+    try {
+      final qUpdate = Query<Category>(context)
+        ..where((x) => x.id).equalTo(id)
+        ..values.isDeleted = false;
+      final updated = await qUpdate.updateOne();
+      return Response.ok(updated);
+    } catch (e) {
+      return AppResponse.ok(message: e.toString());
+    }
+  }
+
   @Operation.delete()
   Future<Response> deleteCategory(
     @Bind.header(HttpHeaders.authorizationHeader) String header, {
