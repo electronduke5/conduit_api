@@ -57,6 +57,23 @@ class AppAssetController extends ResourceController {
     }
   }
 
+  @Operation.delete()
+  Future<Response> deleteAsset(
+    @Bind.header(HttpHeaders.authorizationHeader) String header, {
+    @Bind.query('id') int? id,
+  }) async {
+    try {
+      final idUser = AppUtils.getIdFromHeader(header);
+      final qDeleteAssets = Query<Asset>(managedContext)
+        ..where((asset) => asset.id).equalTo(id)
+        ..where((asset) => asset.user!.id).equalTo(idUser);
+      await qDeleteAssets.delete();
+      return AppResponse.ok(message: 'Удаление прошло успешно');
+    } on QueryException catch (e) {
+      return AppResponse.serverError(e, message: e.message);
+    }
+  }
+
   @Operation.put()
   Future<Response> createAsset(
     @Bind.header(HttpHeaders.authorizationHeader) String header,
