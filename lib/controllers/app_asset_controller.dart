@@ -14,12 +14,17 @@ class AppAssetController extends ResourceController {
 
   @Operation.get()
   Future<Response> getAsset(
-      @Bind.header(HttpHeaders.authorizationHeader) String header,
-      {@Bind.query('id') int? id}) async {
+    @Bind.header(HttpHeaders.authorizationHeader) String header, {
+    @Bind.query('id') int? id,
+    @Bind.query('filter') int? filter,
+    @Bind.query('q') String? query,
+    @Bind.query('page') int page = 1,
+    @Bind.query('limit') int limit = 10,
+  }) async {
     try {
       if (id != null) {
         final qAssets = Query<Asset>(managedContext)
-          ..where((x) => x.id).equalTo(id)
+          ..where((asset) => asset.id).equalTo(id)
           ..join(object: (user) => user.user);
         final asset = await qAssets.fetchOne();
         asset!.user!
@@ -29,7 +34,14 @@ class AppAssetController extends ResourceController {
         final idUser = AppUtils.getIdFromHeader(header);
 
         final qAssets = Query<Asset>(managedContext)
-          ..where((a) => a.user?.id).equalTo(idUser);
+          ..where((a) => a.user?.id).equalTo(idUser)
+          ..where((asset) => asset.name)
+              .contains(query ?? '', caseSensitive: false)
+          ..offset = (page - 1) * limit
+          ..fetchLimit = limit;
+        if (filter != null) {
+          qAssets.where((asset) => asset.type).identifiedBy(filter);
+        }
         //..join(object: (user) => user.user);
         final assets = await qAssets.fetch();
         // for (var el in assets) {

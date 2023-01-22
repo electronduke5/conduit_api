@@ -17,6 +17,5 @@ class _Asset{
   @Relate(#assets, isRequired: true, onDelete: DeleteRule.cascade)
   User? user;
 
-  ManagedSet<Transaction>? transactionsMain;
-  ManagedSet<Transaction>? transactionsTarget;
+  ManagedSet<Transaction>? transactions;
 }

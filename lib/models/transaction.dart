@@ -19,9 +19,6 @@ class _Transaction{
   @Relate(#transactions, isRequired: true, onDelete: DeleteRule.cascade)
   Category? category;
 
-  @Relate(#transactionsMain, isRequired: true, onDelete: DeleteRule.cascade)
+  @Relate(#transactions, isRequired: true, onDelete: DeleteRule.cascade)
   Asset? asset;
-
-  @Relate(#transactionsTarget, isRequired: true, onDelete: DeleteRule.cascade)
-  Asset? target;
 }
