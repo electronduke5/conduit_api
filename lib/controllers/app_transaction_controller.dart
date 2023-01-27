@@ -40,6 +40,8 @@ class AppTransactionController extends ResourceController {
             message: 'Транзакция не найдена',
           );
         }
+        found.category!.removePropertyFromBackingMap('user');
+        found.asset!.removePropertyFromBackingMap('user');
         return Response.ok(
           found,
         );
@@ -59,6 +61,10 @@ class AppTransactionController extends ResourceController {
         qAll.where((x) => x.asset?.id).equalTo(assetId);
       }
       final found = await qAll.fetch();
+      found.forEach((element) {
+        element.category!.removePropertyFromBackingMap('user');
+        element.asset!.removePropertyFromBackingMap('user');
+      });
       return Response.ok(
         found,
       );
@@ -116,7 +122,9 @@ class AppTransactionController extends ResourceController {
             ..where((x) => x.id).equalTo(created.id)
             ..join(object: (transaction) => transaction.category)
             ..join(object: (transaction) => transaction.asset))
-          .fetchOne();
+          .fetchOne()
+        ?..category!.removePropertyFromBackingMap('user')
+        ..asset!.removePropertyFromBackingMap('user');
       AppHistoryController(context).createRecord(
           model: History()
             ..user = user
@@ -188,9 +196,8 @@ class AppTransactionController extends ResourceController {
         );
       }
       transaction = await qGet.fetchOne();
-      transaction!.asset!.user!.removePropertiesFromBackingMap(
-        ['accessToken', 'refreshToken'],
-      );
+      transaction!.asset!.removePropertyFromBackingMap('user');
+      transaction.category!.removePropertyFromBackingMap('user');
       AppHistoryController(context).createRecord(
           model: History()
             ..user = transaction.asset!.user!

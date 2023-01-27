@@ -28,9 +28,9 @@ class AppAssetController extends ResourceController {
         final qAssets = Query<Asset>(managedContext)
           ..where((asset) => asset.id).equalTo(id)
           ..join(object: (user) => user.user);
-        final asset = await qAssets.fetchOne();
-        asset!.user!
-            .removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
+        final asset = await qAssets.fetchOne()?..removePropertyFromBackingMap('user');
+        // asset!.user!
+        //     .removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
         return Response.ok(asset);
       } else {
         final idUser = AppUtils.getIdFromHeader(header);
@@ -46,6 +46,7 @@ class AppAssetController extends ResourceController {
         }
         //..join(object: (user) => user.user);
         final assets = await qAssets.fetch();
+        assets.forEach((element) => element.removePropertyFromBackingMap('user'));
         // for (var el in assets) {
         //   el.user!
         //       .removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
@@ -53,8 +54,6 @@ class AppAssetController extends ResourceController {
         return Response.ok(assets);
       }
     } on QueryException catch (e) {
-      print('e.message: ${e}');
-      print('e.toString(): ${e.toString()}');
       return AppResponse.serverError(e, message: e.message);
     }
   }
@@ -107,7 +106,7 @@ class AppAssetController extends ResourceController {
         final createdAsset = await qCreateAsset.insert();
         id = createdAsset.id!;
       });
-      final assetData = await managedContext.fetchObjectWithID<Asset>(id);
+      final assetData = await managedContext.fetchObjectWithID<Asset>(id)?..removePropertyFromBackingMap('user');
       AppHistoryController(managedContext).createRecord(
           model: History()
             ..user = user
@@ -142,7 +141,7 @@ class AppAssetController extends ResourceController {
 
       await qUpdateAsset.updateOne();
 
-      final newAsset = await qFindAsset.fetchOne();
+      final newAsset = await qFindAsset.fetchOne()?..removePropertyFromBackingMap('user');
       AppHistoryController(managedContext).createRecord(
           model: History()
             ..user = user

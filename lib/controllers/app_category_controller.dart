@@ -26,11 +26,12 @@ class AppCategoryController extends ResourceController {
     try {
       if (id != null) {
         final qCategories = Query<Category>(context)
-          ..where((category) => category.id).equalTo(id)
-          ..join(object: (user) => user.user);
+          ..where((category) => category.id).equalTo(id);
+          //..join(object: (user) => user.user);
         final category = await qCategories.fetchOne();
-        category!.user!
-            .removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
+        category!.removePropertiesFromBackingMap(['user']);
+        //category!.user!
+          //  .removePropertiesFromBackingMap(['refreshToken', 'accessToken']);
         return Response.ok(category);
       } else {
         final idUser = AppUtils.getIdFromHeader(header);
@@ -42,15 +43,14 @@ class AppCategoryController extends ResourceController {
           ..offset = (page - 1) * limit
           ..fetchLimit = limit;
         if (filter != null) {
-          print('filter: ${filter.toString()}');
           qCategories
               .where((category) => category.isDeleted)
               .equalTo(filter == 1 ? true : false);
         } else {
-          print('filter == null');
           qCategories.where((category) => category.isDeleted).equalTo(false);
         }
         final categories = await qCategories.fetch();
+        categories.forEach((element) =>element.removePropertyFromBackingMap('user'));
 
         return Response.ok(categories);
       }
@@ -84,7 +84,7 @@ class AppCategoryController extends ResourceController {
         final createdCategory = await qCreateCategory.insert();
         id = createdCategory.id!;
       });
-      final categoryData = await context.fetchObjectWithID<Category>(id);
+      final categoryData = await context.fetchObjectWithID<Category>(id)?..removePropertyFromBackingMap('user');
 
       AppHistoryController(context).createRecord(
           model: History()
@@ -117,7 +117,7 @@ class AppCategoryController extends ResourceController {
 
       await qUpdateCategory.updateOne();
 
-      final newCategory = await qFindCategory.fetchOne();
+      final newCategory = await qFindCategory.fetchOne()?..removePropertyFromBackingMap('user');
       AppHistoryController(context).createRecord(
           model: History()
             ..user = user
@@ -137,7 +137,7 @@ class AppCategoryController extends ResourceController {
       final qUpdate = Query<Category>(context)
         ..where((x) => x.id).equalTo(id)
         ..values.isDeleted = false;
-      final updated = await qUpdate.updateOne();
+      final updated = await qUpdate.updateOne()?..removePropertyFromBackingMap('user');
       return Response.ok(updated);
     } catch (e) {
       return AppResponse.ok(message: e.toString());
@@ -179,7 +179,7 @@ class AppCategoryController extends ResourceController {
       final qUpdate = Query<Category>(context)
         ..where((x) => x.id).equalTo(id)
         ..values.isDeleted = true;
-      final updated = await qUpdate.updateOne();
+      final updated = await qUpdate.updateOne()?..removePropertyFromBackingMap('user');
       return Response.ok(updated);
     } on QueryException catch (e) {
       return AppResponse.serverError(e, message: e.message);
